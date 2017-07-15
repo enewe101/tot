@@ -14,12 +14,14 @@ DOCUMENTS = 0
 WORDS = 1
 TOPICS = 2
 NUM_PROCS = 12
-SMOOTH_MIN = 0.05
+SMOOTH_MIN = 0.005
 
 # TODO: make n and m only two-dimensional, since we always discard their
 # respective inactive dimensions.
 # Test the update calculations
 
+
+vec_max = np.vectorize(max)
 
 class TopicsOverTimeModel(object):
 
@@ -92,6 +94,8 @@ def fit(
     min_frequency=5,
     num_epochs=100
 ):
+
+    #np.random.seed(1)
 
     # If we don't have the number of documents or a dictionary, then
     # run over the full dataset once to accumulate that information.
@@ -261,12 +265,14 @@ def worker(
             for word, count in counted.iteritems()
         ]
 
+        #print '\t*** document ***:', doc_idx
+
         for word_idx, count in counts:
 
             # Calculate multinomial probabilities over topics for this word
             # in this document
-
             
+            #print 'denom:', repr(denom)
             P = (
                 (m[doc_idx] + alpha - 1) 
                 * (n[word_idx] + beta - 1)
@@ -275,22 +281,45 @@ def worker(
                 / denom
             )
 
-            # Normalize P
+            #print 'word:', dictionary.get_token(word_idx)
+            #print 'raw P', P
+
+            # If any values are negative, shift, smooth, and normalize.
             min_val = np.min(P)
-            P = P + SMOOTH_MIN - min_val
-            P = P / np.linalg.norm(P)   
+            if min_val < 0:
+                # Shift so that smallest value becomes zero; all other values
+                # increased by the same absolute amount
+                P -= min_val
+                #print 'shifted P', P
+
+                # Normalize to a length-1 vector
+                P = P / np.linalg.norm(P, ord=2)   
+                #print 'pre-smooth-norm P', P
+
+                # Smooth -- make small values be at least ``SMOOTH_MIN``, then
+                # re-normalize
+                P = vec_max(P, SMOOTH_MIN)
+                #print 'smooth P', P
+
+            # Normalize to a sum-to-1 vector
+            P = P / np.linalg.norm(P, ord=1)   
+            #print 'norm P', P
 
             # Sample from the multinomial distribution, and update m and n.
-            print P
             sample = np.random.multinomial(count, P)
-            print count
-            print sample
-            print '\n\n'
+            #print 'count', count
+            #print 'sample', sample
+            #print '\n\n'
 
             new_n[word_idx] += sample
             new_m[doc_idx] += sample
             for topic, count in enumerate(sample):
                 psi_update[topic].extend([timestamp]*count)
+
+    #print 'new_m:', repr(new_m)
+    #print 'new_n:', repr(new_n)
+    #print 'psi_update:', repr(psi_update)
+    t4k.out('.')
 
     updates_producer.put((proc_num, new_m, new_n, psi_update))
     updates_producer.close()

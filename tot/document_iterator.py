@@ -34,7 +34,7 @@ class DocumentIterator(object):
 
     def __init__(
         self, read=do_open, files=[], dirs=[], match='', skip='$.^', 
-        fold='0/1', batch_size=10000, skip_err=False
+        fold='0/1', batch_size=10000, skip_err=False, use_hash=False
     ):
         """
         Note that the default for match will match everything, and the 
@@ -43,10 +43,11 @@ class DocumentIterator(object):
         self.fold, self.num_folds = [int(s) for s in fold.split('/')]
         self.skip = self.compile_regexes(skip)
         self.match = self.compile_regexes(match)
-        self.files = self.filter_files(files, dirs, self.skip)
         self.batch_size = batch_size
         self.read = read
         self.skip_err = skip_err
+        self.use_hash = use_hash
+        self.files = self.filter_files(files, dirs)
 
 
     def __len__(self):
@@ -85,7 +86,7 @@ class DocumentIterator(object):
             return re.compile('(' + ')|('.join(skips) + ')')
 
 
-    def filter_files(self, files, dirs, skip):
+    def filter_files(self, files, dirs):
 
         # Generally we expect lists, but single file or dirnames are handled.
         if isinstance(files, basestring):
@@ -93,7 +94,8 @@ class DocumentIterator(object):
         if isinstance(dirs, basestring):
             dirs = [dirs]
 
-        # Absolutize paths, and filter those that belong to this fold
+        # Absolutize paths, and filter files against ``self.skip`` and 
+        # ``self.match``
         filtered_files = []
         filtered_files.extend(self.filter_filelist(files))
         for directory in dirs:
@@ -103,14 +105,26 @@ class DocumentIterator(object):
                 if not self.skip_err:
                     raise
 
+        # Take only the files that belong to this bin.  Sort first for
+        # consistency.  We'll either bin files based on the hash of the
+        # filename (by relying on t4k's inbin function, or we'll bin by taking
+        # every nth file to be in this bin 
+        filtered_files.sort()
+        if self.use_hash:
+            is_in_bin = lambda i,f: t4k.inbin(f,self.num_folds, self.fold)
+        else:
+            is_in_bin = lambda i,f: i % self.num_folds == self.fold
+        filtered_files = [
+            f for i, f in enumerate(filtered_files) if is_in_bin(i,f)
+        ]
+
         return filtered_files
 
 
     def filter_filelist(self, files):
         return (
             f for f in (os.path.abspath(q) for q in files)
-            if self.match.search(f) and not self.skip.search(f) and
-            t4k.inbin(f, self.num_folds, self.fold)
+            if self.match.search(f) and not self.skip.search(f)
         )
 
 
