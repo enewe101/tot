@@ -129,6 +129,10 @@ def fit(
         # updates to m and n.
         updates_queue = IterableQueue()
         for proc_num in range(num_procs):
+
+            # Advance the randomness so children don't all get same seed
+            np.random.random()
+
             doc_iterator = DocumentIterator(
                 read=read, files=files, dirs=dirs, match=match, skip=skip,
                 batch_size=batch_size,
@@ -149,11 +153,13 @@ def fit(
         updates_consumer = updates_queue.get_consumer()
         updates_queue.close()
 
-        # Update m and n
+        # Update m, n, and psi
         n = np.zeros((len(dictionary), num_topics))
         m = np.zeros((total_docs, num_topics))
         psi_updates = [[] for i in range(num_topics)]
+        print proc_doc_indices
         for proc_num, m_update, n_update, psi_update in updates_consumer:
+            print m
             n += n_update
             start_idx = proc_doc_indices[proc_num]
             stop_idx = proc_doc_indices[proc_num+1]
@@ -164,6 +170,8 @@ def fit(
         # Update psi
         for i in range(num_topics):
             psi[:,i] = fit_psi(psi_update[i])
+
+        print m
 
     return m, n, psi, dictionary
 
@@ -319,7 +327,7 @@ def worker(
     #print 'new_m:', repr(new_m)
     #print 'new_n:', repr(new_n)
     #print 'psi_update:', repr(psi_update)
-    t4k.out('.')
+    #t4k.out('.')
 
     updates_producer.put((proc_num, new_m, new_n, psi_update))
     updates_producer.close()
