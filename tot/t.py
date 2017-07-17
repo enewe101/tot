@@ -8,6 +8,7 @@ from iterable_queue import IterableQueue
 from multiprocessing import Process
 from twitter_csv_read import TwitterCSVReader
 from document_iterator import DocumentIterator
+from beta_estimator import estimate_beta
 
 STOPWORDS = set(stopwords.words('english'))
 DEFAULT_NUM_TOPICS = 50
@@ -108,7 +109,7 @@ def fit(
             ))
 
     if alpha is None:
-        alpha = 1./num_topics
+        alpha = 1.
 
     total_docs = sum(num_docs)
     proc_doc_indices = [sum(num_docs[:i]) for i in range(len(num_docs)+1)]
@@ -178,7 +179,7 @@ def fit(
     return m, n, psi, dictionary
 
 def fit_psi(samples):
-    return 1,1
+    return estimate_beta(samples)
 
 
 def construct_dictionary_and_count_documents(
