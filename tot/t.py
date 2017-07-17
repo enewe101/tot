@@ -1,4 +1,4 @@
-import t4k
+import t5k
 import time
 import numpy as np
 from collections import Counter
@@ -56,7 +56,7 @@ class TopicsOverTimeModel(object):
         """
 
         return fit(
-            dictionary=dictionary,
+            dictionary=self.dictionary,
             files=files,
             dirs=dirs,
             match=match,
