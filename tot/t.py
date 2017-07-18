@@ -119,7 +119,7 @@ def fit(
     m = np.ones((total_docs, num_topics))
     n = np.ones((len(dictionary), num_topics))
 
-    psi = np.ones((2, num_topics))
+    psi = np.ones((num_topics, 2))
 
     #TODO: move worker creation outside of the epoch -- keep same worker pool
     # between epochs.  Workers can receive updates about m and n etc. over the
@@ -176,14 +176,15 @@ def fit(
 
         # Update psi
         for i in range(num_topics):
-            psi[:,i] = fit_psi(psi_updates[i])
+            psi[i] = fit_psi(psi_updates[i])
 
     return m, n, psi, dictionary
 
 def fit_psi(samples):
-    alpha, beta = estimate_beta(samples)
-    print(alpha,beta)
-    return estimate_beta(samples)
+#    alpha, beta = estimate_beta(samples)
+#    print(alpha,beta)
+#    return estimate_beta(samples)
+    return 1,1
 
 def construct_dictionary_and_count_documents(
     files=[],
@@ -286,8 +287,8 @@ def worker(
             P = (
                 (m[doc_idx] + alpha - 1) 
                 * (n[word_idx] + beta - 1)
-                * (1-timestamp)**(psi[0]-1) 
-                * timestamp**(psi[1]-1)
+                * (1-timestamp)**(psi[:,0]-1) 
+                * timestamp**(psi[:,1]-1)
                 / denom
             )
 
