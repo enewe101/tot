@@ -16,7 +16,7 @@ import numpy as np
 
 def estimate_beta(timestamps_normalized):
 	mean = np.mean(timestamps_normalized)
-	variance = np.divide(len(np.array(timestamps_normalized) - 1), np.sum(np.square(np.array(timestamps_normalized) - mean)))
+	variance = np.divide(np.sum(np.square(np.array(timestamps_normalized) - mean)), len(np.array(timestamps_normalized) - 1))
 
 	mean_times_one_minus_mean_over_variance = np.divide(mean*(1-mean), variance)
 	alpha = mean*(mean_times_one_minus_mean_over_variance - 1)

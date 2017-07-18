@@ -1,4 +1,4 @@
-import t5k
+import t4k
 import time
 import numpy as np
 from collections import Counter
@@ -47,6 +47,7 @@ class TopicsOverTimeModel(object):
         read=TwitterCSVReader().read,
         num_docs=None,
         min_frequency=5,
+        num_epochs=100
     ):
         """
         Infers model TOT parameters, discovering time-resolved topics from a
@@ -70,6 +71,7 @@ class TopicsOverTimeModel(object):
             read=read,
             num_docs=num_docs,
             min_frequency=min_frequency,
+            num_epochs=num_epochs
         )
 
 
@@ -174,13 +176,14 @@ def fit(
 
         # Update psi
         for i in range(num_topics):
-            psi[:,i] = fit_psi(psi_update[i])
+            psi[:,i] = fit_psi(psi_updates[i])
 
     return m, n, psi, dictionary
 
 def fit_psi(samples):
+    alpha, beta = estimate_beta(samples)
+    print(alpha,beta)
     return estimate_beta(samples)
-
 
 def construct_dictionary_and_count_documents(
     files=[],
