@@ -175,16 +175,16 @@ def fit(
                 psi_updates[i].extend(psi_update[i])
 
         # Update psi
+	print(psi)
         for i in range(num_topics):
             psi[i] = fit_psi(psi_updates[i])
 
     return m, n, psi, dictionary
 
 def fit_psi(samples):
-#    alpha, beta = estimate_beta(samples)
-#    print(alpha,beta)
-#    return estimate_beta(samples)
-    return 1,1
+    print(len(samples))
+    alpha, beta = estimate_beta(samples)
+    return alpha, beta
 
 def construct_dictionary_and_count_documents(
     files=[],
@@ -287,8 +287,8 @@ def worker(
             P = (
                 (m[doc_idx] + alpha - 1) 
                 * (n[word_idx] + beta - 1)
-                * (1-timestamp)**(psi[:,0]-1) 
-                * timestamp**(psi[:,1]-1)
+                * (timestamp)**(psi[:,0]-1) 
+                * (1-timestamp)**(psi[:,1]-1)
                 / denom
             )
 
