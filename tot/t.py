@@ -1,4 +1,4 @@
-from .unigram_dictionary import UnigramDictionary
+from unigram_dictionary import UnigramDictionary
 import time
 import numpy as np
 from collections import Counter
@@ -6,7 +6,6 @@ from nltk.corpus import stopwords
 from scipy.special import beta as beta_func
 from iterable_queue import IterableQueue
 from multiprocessing import Process
-from twitter_csv_read import TwitterCSVReader
 from document_iterator import DocumentIterator
 from beta_estimator import estimate_beta
 
@@ -44,7 +43,7 @@ class TopicsOverTimeModel(object):
         alpha=None,
         beta=0.1,
         num_procs=NUM_PROCS,
-        read=TwitterCSVReader().read,
+        read=None,
         num_docs=None,
         min_frequency=5,
         num_epochs=100
@@ -94,7 +93,7 @@ def fit(
     alpha=None,
     beta=0.1,
     num_procs=NUM_PROCS,
-    read=TwitterCSVReader().read,
+    read=None,
     num_docs=None,
     min_frequency=5,
     num_epochs=100
@@ -191,7 +190,7 @@ def construct_dictionary_and_count_documents(
     skip='$.^',
     batch_size=1000,
     num_procs=NUM_PROCS,
-    read=TwitterCSVReader().read,
+    read=None,
     stopwords=STOPWORDS,
     min_frequency=5
 ):
