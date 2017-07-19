@@ -193,7 +193,7 @@ def construct_dictionary_and_count_documents(
     num_procs=NUM_PROCS,
     read=TwitterCSVReader().read,
     stopwords=STOPWORDS,
-    min_frequency=1
+    min_frequency=5
 ):
     """
     Build a dictionary by running through the dataset fully.
