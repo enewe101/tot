@@ -274,7 +274,7 @@ def worker(
         counted = Counter(document)
         counts = [
             (dictionary.get_id(word), count)
-            for word, count in counted.iteritems()
+            for word, count in counted.items()
             if dictionary.get_id(word) > 0
         ]
 

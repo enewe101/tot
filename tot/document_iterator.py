@@ -80,7 +80,7 @@ class DocumentIterator(object):
 
 
     def compile_regexes(self, regex):
-        if isinstance(regex, basestring):
+        if isinstance(regex, str):
             return re.compile(regex)
         else:
             return re.compile('(' + ')|('.join(skips) + ')')
@@ -89,9 +89,9 @@ class DocumentIterator(object):
     def filter_files(self, files, dirs):
 
         # Generally we expect lists, but single file or dirnames are handled.
-        if isinstance(files, basestring):
+        if isinstance(files, str):
             files = [files]
-        if isinstance(dirs, basestring):
+        if isinstance(dirs, str):
             dirs = [dirs]
 
         # Absolutize paths, and filter files against ``self.skip`` and 

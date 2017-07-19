@@ -15,10 +15,10 @@ def ensure_str(s):
 	'''
 	Ensures that the string is encoded as str, not unicode
 	'''
-	try:
-		return s.encode('utf8')
-	except UnicodeDecodeError:
-		return s
+#	try:
+#		return s.encode('utf8')
+#	except UnicodeDecodeError:
+	return s
 
 
 # TODO: enable loading and saving
