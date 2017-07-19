@@ -1,6 +1,6 @@
 import os
 import re
-import t4k
+# import t4k
 
 
 def do_open(path):
@@ -98,22 +98,22 @@ class DocumentIterator(object):
         # ``self.match``
         filtered_files = []
         filtered_files.extend(self.filter_filelist(files))
-        for directory in dirs:
-            try:
-                filtered_files.extend(self.filter_filelist(t4k.ls(directory)))
-            except OSError:
-                if not self.skip_err:
-                    raise
+        # for directory in dirs:
+        #     try:
+        #         filtered_files.extend(self.filter_filelist(t4k.ls(directory)))
+        #     except OSError:
+        #         if not self.skip_err:
+        #             raise
 
         # Take only the files that belong to this bin.  Sort first for
         # consistency.  We'll either bin files based on the hash of the
         # filename (by relying on t4k's inbin function, or we'll bin by taking
         # every nth file to be in this bin 
         filtered_files.sort()
-        if self.use_hash:
-            is_in_bin = lambda i,f: t4k.inbin(f,self.num_folds, self.fold)
-        else:
-            is_in_bin = lambda i,f: i % self.num_folds == self.fold
+        # if self.use_hash:
+        #     is_in_bin = lambda i,f: t4k.inbin(f,self.num_folds, self.fold)
+        # else:
+        is_in_bin = lambda i,f: i % self.num_folds == self.fold
         filtered_files = [
             f for i, f in enumerate(filtered_files) if is_in_bin(i,f)
         ]
