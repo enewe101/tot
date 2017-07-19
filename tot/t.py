@@ -175,14 +175,12 @@ def fit(
                 psi_updates[i].extend(psi_update[i])
 
         # Update psi
-	print(psi)
         for i in range(num_topics):
             psi[i] = fit_psi(psi_updates[i])
 
     return m, n, psi, dictionary
 
 def fit_psi(samples):
-    print(len(samples))
     alpha, beta = estimate_beta(samples)
     return alpha, beta
 
