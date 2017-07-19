@@ -1,4 +1,4 @@
-import t4k
+from .unigram_dictionary import UnigramDictionary
 import time
 import numpy as np
 from collections import Counter
@@ -127,7 +127,7 @@ def fit(
     for epoch in range(num_epochs):
 
         # Show progress
-        t4k.progress(epoch, num_epochs, 1)
+        print(float(epoch)/num_epochs * 100)
 
         # Pre-calculate the denominator in the sum of the probability dist
         n_denom = (n + beta).sum(axis=0) - 1
@@ -224,7 +224,7 @@ def construct_dictionary_and_count_documents(
     # Collect the workers' dictionaries into one.
     worker_dictionary_consumer = worker_dictionary_queue.get_consumer()
     worker_dictionary_queue.close()
-    dictionary = t4k.UnigramDictionary()
+    dictionary = UnigramDictionary()
     for worker_dictionary in worker_dictionary_consumer:
         dictionary.add_dictionary(worker_dictionary)
 
@@ -247,7 +247,7 @@ def dictionary_worker(
     num_docs_queue,
     stopwords=set()
 ):
-    dictionary = t4k.UnigramDictionary()
+    dictionary = UnigramDictionary()
     num_docs = 0
     for timestamp, tokens in documents_iterator:
         dictionary.update([t for t in tokens if t not in stopwords])
