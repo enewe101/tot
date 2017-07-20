@@ -6,6 +6,7 @@ from nltk.corpus import stopwords
 from scipy.special import beta as beta_func
 from iterable_queue import IterableQueue
 from multiprocessing import Process
+import multiprocessing as mp
 from document_iterator import DocumentIterator
 from beta_estimator import estimate_beta
 
@@ -136,6 +137,7 @@ def fit(
         # The workers should calculate probabilities and then sample, producing
         # updates to m and n.
         updates_queue = IterableQueue()
+        ctx = mp.get_context("spawn")
         for proc_num in range(num_procs):
 
             # Advance the randomness so children don't all get same seed
@@ -148,7 +150,7 @@ def fit(
             )
             m_slice = m[proc_doc_indices[proc_num]:proc_doc_indices[proc_num+1]]
 
-            p = Process(
+            p = ctx.Process(
                 target=worker,
                 args=(
                     proc_num, doc_iterator, dictionary, num_topics,
@@ -204,6 +206,7 @@ def construct_dictionary_and_count_documents(
     # documents.  They return their dictionaries over a queue.
     worker_dictionary_queue = IterableQueue()
     worker_num_docs_queue = IterableQueue()
+    ctx = mp.get_context('spawn')
     for proc_num in range(num_procs):
         doc_iterator = DocumentIterator(
             read=read, files=files, dirs=dirs, match=match, skip=skip, 
@@ -217,7 +220,7 @@ def construct_dictionary_and_count_documents(
             worker_num_docs_queue.get_producer(),
             stopwords,
         )
-        p = Process(target=dictionary_worker, args=args)
+        p = ctx.Process(target=dictionary_worker, args=args)
         p.start()
 
     # Collect the workers' dictionaries into one.
