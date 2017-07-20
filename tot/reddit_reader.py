@@ -9,7 +9,7 @@ END_TIME = 1467390840 #2016-07-01
 def read_reddit(path):
 	TIME_INTERVAL = END_TIME - START_TIME
 	with gzip.open(path, 'rb') as f:
-		posts_raw = f.read()
+		posts_raw = f.read().decode('utf-8')
 	posts = json.loads(posts_raw)
 
 	#filter for only title + self-text and timestamp
