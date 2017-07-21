@@ -41,6 +41,7 @@ class TopicsOverTimeModel(object):
         skip='$.^',
         batch_size=1000,
         num_topics=DEFAULT_NUM_TOPICS,
+        time_range=None,
         alpha=None,
         beta=0.1,
         num_procs=NUM_PROCS,
@@ -65,6 +66,7 @@ class TopicsOverTimeModel(object):
             skip=skip,
             batch_size=batch_size,
             num_topics=num_topics,
+            time_range=None,
             alpha=alpha,
             beta=beta,
             num_procs=num_procs,
@@ -91,6 +93,7 @@ def fit(
     skip='$.^',
     batch_size=1000,
     num_topics=DEFAULT_NUM_TOPICS,
+    time_range=None,
     alpha=None,
     beta=0.1,
     num_procs=NUM_PROCS,
@@ -102,14 +105,17 @@ def fit(
 
     # If we don't have the number of documents or a dictionary, then
     # run over the full dataset once to accumulate that information.
-    if dictionary is None or num_docs is None:
-        dictionary, num_docs = (
-            construct_dictionary_and_count_documents(
+    if dictionary is None or num_docs is None or time_range is None:
+        dictionary, num_docs, found_time_range = (
+            get_corpus_stats(
                 files=files, dirs=dirs, match=match, skip=skip,
                 batch_size=batch_size, num_procs=num_procs, read=read,
                 stopwords=STOPWORDS, min_frequency=min_frequency
             ))
 
+    if time_range is None:
+        time_range = found_time_range
+    
     if alpha is None:
         alpha = 1.
 
@@ -185,7 +191,7 @@ def fit_psi(samples):
     alpha, beta = estimate_beta(samples)
     return alpha, beta
 
-def construct_dictionary_and_count_documents(
+def get_corpus_stats(
     files=[],
     dirs=[],
     match='',
@@ -206,6 +212,7 @@ def construct_dictionary_and_count_documents(
     # documents.  They return their dictionaries over a queue.
     worker_dictionary_queue = IterableQueue()
     worker_num_docs_queue = IterableQueue()
+    worker_time_range_queue = IterableQueue()
     ctx = mp.get_context('spawn')
     for proc_num in range(num_procs):
         doc_iterator = DocumentIterator(
@@ -218,6 +225,7 @@ def construct_dictionary_and_count_documents(
             doc_iterator,
             worker_dictionary_queue.get_producer(),
             worker_num_docs_queue.get_producer(),
+            worker_time_range_queue.get_producer(),
             stopwords,
         )
         p = ctx.Process(target=dictionary_worker, args=args)
@@ -238,8 +246,23 @@ def construct_dictionary_and_count_documents(
     worker_num_docs_queue.close()
     num_docs = [count for proc_num, count in sorted(worker_num_docs_consumer)]
 
-    # Return the completed, pruned dictionary.
-    return dictionary, num_docs
+    # Get time range for all documents
+    worker_time_range_consumer = worker_time_range_queue.get_consumer()
+    worker_time_range_queue.close()
+
+    minimum_t = 999999999999
+    maximum_t = 0
+    for min_time, max_time in worker_time_range_consumer:
+        minimum_t = min(min_time,minimum_t)
+        maximum_t = max(max_time,maximum_t)
+
+    #buffering with 1% on both sides to ensure a nonzero chance for each document
+    time_difference = time_range[1] - time_range[0]
+    wiggle_room = time_difference/100
+    time_range = (minimum_t - wiggle_room, maximum_t + wiggle_room)
+
+    # Return the completed, pruned dictionary, and time range.
+    return dictionary, num_docs, time_range
 
 
 def dictionary_worker(
@@ -247,23 +270,31 @@ def dictionary_worker(
     documents_iterator,
     dictionary_queue,
     num_docs_queue,
+    time_range_queue,
     stopwords=set()
 ):
     dictionary = UnigramDictionary()
+    min_time = 999999999999
+    max_time = 0
     num_docs = 0
     for timestamp, tokens in documents_iterator:
         dictionary.update([t for t in tokens if t not in stopwords])
+        min_time = min(min_time, timestamp)
+        max_time = max(max_time, timestamp)
         num_docs += 1
 
     dictionary_queue.put(dictionary)
     dictionary_queue.close()
+
+    time_range_queue.put((min_time,max_time))
+    time_range.queue.close()
 
     num_docs_queue.put((proc_num, num_docs))
     num_docs_queue.close()
 
 
 def worker(
-    proc_num, documents, dictionary, num_topics, 
+    proc_num, documents, dictionary, num_topics, time_range,
     alpha, beta, psi, n, m, denom, updates_producer
 ):
 
@@ -273,6 +304,9 @@ def worker(
     psi_update = [[] for i in range(num_topics)]
 
     for doc_idx, (timestamp, document) in enumerate(documents):
+
+        #normalize timestamp
+        timestamp = np.divide((timestamp - time_range[0], time_range[1] - time_range[0]))
 
         counted = Counter(document)
         counts = [
