@@ -1,6 +1,7 @@
 import os
 import re
 # import t4k
+import file_utils
 
 
 def do_open(path):
@@ -98,12 +99,12 @@ class DocumentIterator(object):
         # ``self.match``
         filtered_files = []
         filtered_files.extend(self.filter_filelist(files))
-        # for directory in dirs:
-        #     try:
-        #         filtered_files.extend(self.filter_filelist(t4k.ls(directory)))
-        #     except OSError:
-        #         if not self.skip_err:
-        #             raise
+        for directory in dirs:
+            try:
+                filtered_files.extend(self.filter_filelist(file_utils.ls(directory)))
+            except OSError:
+                if not self.skip_err:
+                    raise
 
         # Take only the files that belong to this bin.  Sort first for
         # consistency.  We'll either bin files based on the hash of the
