@@ -133,7 +133,7 @@ class PathLister(object):
 
 
     def next_dir(self):
-        cur_path, cur_dirs, cur_files = self.walker.next()
+        cur_path, cur_dirs, cur_files = self.walker.__next__()
 
         # First reletavize cur_path to current working directory (by default
         # it's reletavized to the path given in the constructor)
