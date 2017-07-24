@@ -1,6 +1,7 @@
 from unigram_dictionary import UnigramDictionary
 import time
 import numpy as np
+import operator
 from collections import Counter
 from nltk.corpus import stopwords
 from scipy.special import beta as beta_func
@@ -115,7 +116,7 @@ def fit(
 
     if time_range is None:
         time_range = found_time_range
-    
+
     if alpha is None:
         alpha = 1.
 
@@ -353,6 +354,27 @@ def worker(
 
     updates_producer.put((proc_num, new_m, new_n, psi_update))
     updates_producer.close()
+
+def print_top_words_per_topic(n,psi,dictionary,nb_words):
+     n_transposed = np.transpose(n)
+     all_words = {}
+     for idx, topic in enumerate(n_transposed):
+         max_words = []
+         for iteration in range(nb_words):
+             index, value = max(enumerate(topic), key=operator.itemgetter(1))
+             topic[index] = -1
+             max_words.append((index,value))
+         print("topic {0}: \n psi values: {1} \n top words:".format(str(idx), psi[idx]))
+         for jdx, word in enumerate(max_words):
+             actual_word = dictionary.get_token(word[0])
+             max_words[jdx] = actual_word
+             print(actual_word)
+         all_words[idx] = max_words
+     return all_words
+ 
+
+
+
 
 
 
