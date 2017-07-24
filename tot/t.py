@@ -159,7 +159,7 @@ def fit(
             p = ctx.Process(
                 target=worker,
                 args=(
-                    proc_num, doc_iterator, dictionary, num_topics,
+                    proc_num, doc_iterator, dictionary, num_topics, time_range,
                     alpha, beta, psi, n, m_slice, denom, 
                     updates_queue.get_producer()
                 )
@@ -257,7 +257,7 @@ def get_corpus_stats(
         maximum_t = max(max_time,maximum_t)
 
     #buffering with 1% on both sides to ensure a nonzero chance for each document
-    time_difference = time_range[1] - time_range[0]
+    time_difference = maximum_t - minimum_t
     wiggle_room = time_difference/100
     time_range = (minimum_t - wiggle_room, maximum_t + wiggle_room)
 
@@ -287,7 +287,7 @@ def dictionary_worker(
     dictionary_queue.close()
 
     time_range_queue.put((min_time,max_time))
-    time_range.queue.close()
+    time_range_queue.close()
 
     num_docs_queue.put((proc_num, num_docs))
     num_docs_queue.close()
@@ -306,7 +306,7 @@ def worker(
     for doc_idx, (timestamp, document) in enumerate(documents):
 
         #normalize timestamp
-        timestamp = np.divide((timestamp - time_range[0], time_range[1] - time_range[0]))
+        timestamp = np.divide(timestamp - time_range[0], time_range[1] - time_range[0])
 
         counted = Counter(document)
         counts = [
